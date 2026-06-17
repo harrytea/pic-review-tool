@@ -9,22 +9,29 @@
 
 <style type="text/css">
 .img-grid {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(var(--cols, 6), 1fr);
 	gap: 8px;
 }
 .img-card {
 	border: 1px solid #ccc;
 	padding: 4px;
 	text-align: center;
-	width: 150px;
 	cursor: pointer;
+	box-sizing: border-box;
+	overflow: hidden;
 }
 .img-card img {
-	max-width: 140px;
-	max-height: 140px;
+	max-width: 100%;
+	height: auto;
 	display: block;
 	margin: 0 auto;
+}
+.img-grid.fixed-h .img-card img {
+	height: var(--img-h, 140px);
+	width: auto;
+	max-width: 100%;
+	object-fit: contain;
 }
 .img-card .img-id {
 	font-size: 12px;
@@ -223,6 +230,28 @@ function bodyclickHandler(evt)
 
 <div id="divImg" style="display:none">
 
+	<div style="margin-bottom:8px;">
+		<label>每行图片数量：</label>
+		<input type=button value="-" onclick="changeCols(-1)"/>
+		<input type=number id="colsInput" value="6" min="1" max="20" style="width:60px;text-align:center;" onchange="setColsFromInput()"/>
+		<input type=button value="+" onclick="changeCols(1)"/>
+		&nbsp;快捷：
+		<input type=button value="2" onclick="setCols(2)"/>
+		<input type=button value="4" onclick="setCols(4)"/>
+		<input type=button value="6" onclick="setCols(6)"/>
+		<input type=button value="8" onclick="setCols(8)"/>
+		<input type=button value="10" onclick="setCols(10)"/>
+	</div>
+	<div style="margin-bottom:8px;">
+		<label>图片高度：</label>
+		<input type=button value="自适应高度" onclick="setAutoHeight()"/>
+		<input type=button value="固定高度" onclick="setFixedHeight()"/>
+		&nbsp;
+		<input type=button value="-" onclick="changeHeight(-20)"/>
+		<input type=number id="heightInput" value="140" min="40" max="800" step="10" style="width:70px;text-align:center;" onchange="setHeightFromInput()"/>
+		<label>px</label>
+		<input type=button value="+" onclick="changeHeight(20)"/>
+	</div>
 	<div id="imgGrid" class="img-grid"></div>
 	<div style="margin-top:10px;">
 		<div>
@@ -242,6 +271,58 @@ function bodyclickHandler(evt)
 <script language="javascript">
 
 	var totalImgCount = 0;
+
+	function setCols(n) {
+		n = parseInt(n);
+		if (isNaN(n) || n < 1) n = 1;
+		if (n > 20) n = 20;
+		var grid = document.getElementById("imgGrid");
+		grid.style.setProperty('--cols', n);
+		document.getElementById("colsInput").value = n;
+	}
+
+	function changeCols(delta) {
+		var input = document.getElementById("colsInput");
+		var n = parseInt(input.value) || 6;
+		setCols(n + delta);
+	}
+
+	function setColsFromInput() {
+		var input = document.getElementById("colsInput");
+		setCols(input.value);
+	}
+
+	function setAutoHeight() {
+		var grid = document.getElementById("imgGrid");
+		grid.classList.remove('fixed-h');
+	}
+
+	function setFixedHeight() {
+		var grid = document.getElementById("imgGrid");
+		grid.classList.add('fixed-h');
+		setHeight(document.getElementById("heightInput").value);
+	}
+
+	function setHeight(h) {
+		h = parseInt(h);
+		if (isNaN(h) || h < 40) h = 40;
+		if (h > 800) h = 800;
+		var grid = document.getElementById("imgGrid");
+		grid.style.setProperty('--img-h', h + 'px');
+		document.getElementById("heightInput").value = h;
+		grid.classList.add('fixed-h');
+	}
+
+	function changeHeight(delta) {
+		var input = document.getElementById("heightInput");
+		var h = parseInt(input.value) || 140;
+		setHeight(h + delta);
+	}
+
+	function setHeightFromInput() {
+		var input = document.getElementById("heightInput");
+		setHeight(input.value);
+	}
 
 	function getMarkedImgUrl() {
 		var dstTxtArea = document.getElementById("idTxtAreaMarkedUrl");
@@ -283,6 +364,7 @@ function bodyclickHandler(evt)
 
 		var grid = document.getElementById("imgGrid");
 		grid.innerHTML = "";
+		setCols(document.getElementById("colsInput").value);
 		totalImgCount = arrImgUrl.length;
 		
 		for ( var i=0; i<arrImgUrl.length; i++ )
