@@ -45,6 +45,51 @@
 	border: 3px solid #ff00ff;
 	background-color: #ffe0ff;
 }
+.img-table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 13px;
+}
+.img-table th, .img-table td {
+	border: 1px solid #ccc;
+	padding: 6px 8px;
+	vertical-align: middle;
+	word-break: break-all;
+}
+.img-table th {
+	background: #f5f5f5;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+.img-table tbody tr {
+	cursor: pointer;
+}
+.img-table tbody tr.marked {
+	background-color: #ffe0ff;
+	outline: 2px solid #ff00ff;
+}
+.img-table td.url-cell {
+	text-align: center;
+}
+.img-table td.url-cell img {
+	max-width: 260px;
+	height: auto;
+	display: block;
+	margin: 0 auto;
+}
+.img-table.fixed-h td.url-cell img {
+	height: var(--img-h, 140px);
+	width: auto;
+	max-width: 100%;
+	object-fit: contain;
+}
+.img-table td.mark-cell {
+	text-align: center;
+	font-weight: bold;
+	color: #ff00ff;
+	width: 40px;
+}
 </style>
 
 <script language="javascript">
@@ -201,17 +246,19 @@ var arrImgUrl = new Array(
 function bodyclickHandler(evt)
 {
     var obj = evt.srcElement || evt.target;
-	// 找到最近的 .img-card
+	// 找到最近的 .img-card 或表格中的行
 	var card = obj.closest ? obj.closest('.img-card') : null;
-	if (!card) return;
-	var idx = card.getAttribute('data-idx');
+	var row  = obj.closest ? obj.closest('tr.img-row') : null;
+	var container = card || row;
+	if (!container) return;
+	var idx = container.getAttribute('data-idx');
 	var valSpan = document.getElementById("valTD"+idx);
 	if(valSpan.innerHTML==1){
 		valSpan.innerHTML = 0;
-		card.classList.remove('marked');
+		container.classList.remove('marked');
 	} else {
 		valSpan.innerHTML = 1;
-		card.classList.add('marked');
+		container.classList.add('marked');
 	}
 	getMarkedImgUrl();
 }
@@ -222,7 +269,19 @@ function bodyclickHandler(evt)
 <BODY onclick=bodyclickHandler(event)>
 
 <div id="divURL" style="display:block">
-	<label>请输入图片URL：</label>
+	<div style="margin-bottom:8px;">
+		<label><b>输入模式：</b></label>
+		<label><input type="radio" name="inputMode" value="url" checked onclick="switchInputMode('url')"/> URL 模式（每行一个图片链接）</label>
+		&nbsp;&nbsp;
+		<label><input type="radio" name="inputMode" value="table" onclick="switchInputMode('table')"/> 表格模式（自动识别 URL 列，可含表头也可不含）</label>
+	</div>
+	<div id="urlHint" style="color:#666;font-size:12px;margin-bottom:4px;">
+		每行粘贴一个图片 URL。
+	</div>
+	<div id="tableHint" style="color:#666;font-size:12px;margin-bottom:4px;display:none;">
+		直接从 Excel/表格复制粘贴，列之间使用 Tab（\t）分隔。工具会自动识别包含图片 URL 的列并渲染为图片；首行若不是 URL 会被当作表头，否则自动使用"列N"作为列名。
+	</div>
+	<label id="lblInput">请输入图片URL：</label>
 	<input type=button value="显示图片" onclick="loadImg()"/>
 	<br/>
 	<textarea cols="40" rows="15" style="width:850px;height:400px;" name="idTxtAreaUrl" id="idTxtAreaUrl"></textarea>
@@ -231,6 +290,11 @@ function bodyclickHandler(evt)
 <div id="divImg" style="display:none">
 
 	<div style="margin-bottom:8px;">
+		<label><b>展示视图：</b></label>
+		<input type=button id="btnViewGrid" value="网格视图" onclick="setView('grid')"/>
+		<input type=button id="btnViewTable" value="表格视图" onclick="setView('table')"/>
+	</div>
+	<div id="gridControls" style="margin-bottom:8px;">
 		<label>每行图片数量：</label>
 		<input type=button value="-" onclick="changeCols(-1)"/>
 		<input type=number id="colsInput" value="6" min="1" max="20" style="width:60px;text-align:center;" onchange="setColsFromInput()"/>
@@ -253,6 +317,9 @@ function bodyclickHandler(evt)
 		<input type=button value="+" onclick="changeHeight(20)"/>
 	</div>
 	<div id="imgGrid" class="img-grid"></div>
+	<div id="imgTableWrap" style="display:none;overflow:auto;max-height:80vh;">
+		<table id="imgTable" class="img-table"></table>
+	</div>
 	<div style="margin-top:10px;">
 		<div>
 			<input type=button value="获取被标记图片的URL" onclick="getMarkedImgUrl()"/>
@@ -271,6 +338,32 @@ function bodyclickHandler(evt)
 <script language="javascript">
 
 	var totalImgCount = 0;
+	var currentMode = 'url';      // 'url' | 'table'
+	var currentView = 'grid';     // 'grid' | 'table'
+
+	function switchInputMode(mode) {
+		currentMode = mode;
+		document.getElementById("urlHint").style.display   = (mode==='url')   ? 'block' : 'none';
+		document.getElementById("tableHint").style.display = (mode==='table') ? 'block' : 'none';
+		document.getElementById("lblInput").innerHTML =
+			(mode==='url') ? '请输入图片URL：' : '请粘贴带表头的表格数据（Tab 分隔）：';
+	}
+
+	function setView(view) {
+		currentView = view;
+		var gridWrap  = document.getElementById("imgGrid");
+		var tableWrap = document.getElementById("imgTableWrap");
+		var gridCtrl  = document.getElementById("gridControls");
+		if (view === 'table') {
+			gridWrap.style.display  = 'none';
+			tableWrap.style.display = 'block';
+			gridCtrl.style.display  = 'none';
+		} else {
+			gridWrap.style.display  = 'grid';
+			tableWrap.style.display = 'none';
+			gridCtrl.style.display  = 'block';
+		}
+	}
 
 	function setCols(n) {
 		n = parseInt(n);
@@ -293,13 +386,13 @@ function bodyclickHandler(evt)
 	}
 
 	function setAutoHeight() {
-		var grid = document.getElementById("imgGrid");
-		grid.classList.remove('fixed-h');
+		document.getElementById("imgGrid").classList.remove('fixed-h');
+		document.getElementById("imgTable").classList.remove('fixed-h');
 	}
 
 	function setFixedHeight() {
-		var grid = document.getElementById("imgGrid");
-		grid.classList.add('fixed-h');
+		document.getElementById("imgGrid").classList.add('fixed-h');
+		document.getElementById("imgTable").classList.add('fixed-h');
 		setHeight(document.getElementById("heightInput").value);
 	}
 
@@ -307,10 +400,13 @@ function bodyclickHandler(evt)
 		h = parseInt(h);
 		if (isNaN(h) || h < 40) h = 40;
 		if (h > 800) h = 800;
-		var grid = document.getElementById("imgGrid");
+		var grid  = document.getElementById("imgGrid");
+		var table = document.getElementById("imgTable");
 		grid.style.setProperty('--img-h', h + 'px');
+		table.style.setProperty('--img-h', h + 'px');
 		document.getElementById("heightInput").value = h;
 		grid.classList.add('fixed-h');
+		table.classList.add('fixed-h');
 	}
 
 	function changeHeight(delta) {
@@ -345,37 +441,144 @@ function bodyclickHandler(evt)
 		}
 	}
 
+	function escapeHtml(s) {
+		return (s == null ? '' : String(s))
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;');
+	}
+
 	function loadImg(){
-		
+
 		var objDivUrl = document.getElementById("divURL");
 		var objDivImg = document.getElementById("divImg");
 		objDivUrl.style.display="none";
 		objDivImg.style.display="block";
 
 		var ObjURLTxt = document.getElementById("idTxtAreaUrl");
-		var content   = ObjURLTxt.value.split('\n');
-		var arrImgUrl = [];
-		for (var j=0; j<content.length; j++) {
-			var line = content[j].trim();
-			if (line.length==0) continue;
-			if (!/^https?:\/\//i.test(line)) continue;
-			arrImgUrl.push(line);
-		}
+		var raw = ObjURLTxt.value;
+		var lines = raw.split('\n');
 
-		var grid = document.getElementById("imgGrid");
+		var grid  = document.getElementById("imgGrid");
+		var table = document.getElementById("imgTable");
 		grid.innerHTML = "";
-		setCols(document.getElementById("colsInput").value);
-		totalImgCount = arrImgUrl.length;
-		
-		for ( var i=0; i<arrImgUrl.length; i++ )
-		{
-			var card = document.createElement("div");
-			card.className = "img-card";
-			card.setAttribute("data-idx", i);
-			card.innerHTML = '<div class="img-id">' + (i+1) + '</div>' +
-				'<img id="myimg'+i+'" src="'+arrImgUrl[i]+'">' +
-				'<span class="img-val" id="valTD'+i+'">0</span>';
-			grid.appendChild(card);
+		table.innerHTML = "";
+
+		if (currentMode === 'table') {
+			// 收集所有非空行
+			var allRows = [];
+			for (var k=0; k<lines.length; k++) {
+				var ln = lines[k].replace(/\r$/, '');
+				if (ln.trim().length === 0) continue;
+				allRows.push(ln.split('\t'));
+			}
+			if (allRows.length === 0) {
+				alert('请粘贴表格数据');
+				return;
+			}
+
+			// 判断首行是否为表头：首行任一单元格不是 URL，且下方存在 URL 列 -> 视为表头
+			function isUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
+
+			var maxCols = 0;
+			for (var i=0; i<allRows.length; i++) {
+				if (allRows[i].length > maxCols) maxCols = allRows[i].length;
+			}
+
+			// 自动检测 URL 列：统计每一列出现 URL 的次数，取最多的一列
+			var urlColIdx = -1, bestCount = 0;
+			for (var c=0; c<maxCols; c++) {
+				var cnt = 0;
+				for (var r=0; r<allRows.length; r++) {
+					if (isUrl(allRows[r][c])) cnt++;
+				}
+				if (cnt > bestCount) { bestCount = cnt; urlColIdx = c; }
+			}
+			if (urlColIdx < 0 || bestCount === 0) {
+				alert('未在数据中自动识别出图片 URL 列');
+				return;
+			}
+
+			// 判断首行是否为表头：首行该列不是 URL 即视为表头
+			var headers, dataRows;
+			var firstRow = allRows[0];
+			var firstRowIsHeader = !isUrl(firstRow[urlColIdx]);
+			if (firstRowIsHeader) {
+				headers  = firstRow;
+				dataRows = allRows.slice(1);
+			} else {
+				headers  = [];
+				for (var h=0; h<maxCols; h++) headers.push('列'+(h+1));
+				dataRows = allRows;
+			}
+			// 补齐 headers 长度
+			while (headers.length < maxCols) headers.push('列'+(headers.length+1));
+
+			// 构建表头
+			var thead = document.createElement('thead');
+			var trh = document.createElement('tr');
+			trh.innerHTML = '<th>#</th><th>标记</th>' +
+				headers.map(function(h,idx){
+					var name = escapeHtml((h||'').trim() || ('列'+(idx+1)));
+					if (idx === urlColIdx) name += '（图片）';
+					return '<th>'+name+'</th>';
+				}).join('');
+			thead.appendChild(trh);
+			table.appendChild(thead);
+
+			var tbody = document.createElement('tbody');
+			totalImgCount = dataRows.length;
+			for (var r=0; r<dataRows.length; r++) {
+				var cols = dataRows[r];
+				var tr = document.createElement('tr');
+				tr.className = 'img-row';
+				tr.setAttribute('data-idx', r);
+				var html = '<td>' + (r+1) + '</td>' +
+					'<td class="mark-cell"><span class="img-val" id="valTD'+r+'">0</span></td>';
+				for (var c=0; c<headers.length; c++) {
+					var cell = cols[c] != null ? cols[c] : '';
+					if (c === urlColIdx) {
+						var u = (cell||'').trim();
+						if (isUrl(u)) {
+							html += '<td class="url-cell"><img id="myimg'+r+'" src="'+escapeHtml(u)+'"/><div style="font-size:11px;color:#888;word-break:break-all;">'+escapeHtml(u)+'</div></td>';
+						} else {
+							html += '<td class="url-cell"><span id="myimgHolder'+r+'" data-src="" style="color:#999;">(无URL)</span></td>';
+						}
+					} else {
+						html += '<td>'+escapeHtml(cell)+'</td>';
+					}
+				}
+				tr.innerHTML = html;
+				tbody.appendChild(tr);
+			}
+			table.appendChild(tbody);
+
+			setView('table');
+		} else {
+			// URL 模式（保持原逻辑）
+			var arrImgUrl = [];
+			for (var j=0; j<lines.length; j++) {
+				var line = lines[j].trim();
+				if (line.length==0) continue;
+				if (!/^https?:\/\//i.test(line)) continue;
+				arrImgUrl.push(line);
+			}
+			setCols(document.getElementById("colsInput").value);
+			totalImgCount = arrImgUrl.length;
+
+			for ( var i=0; i<arrImgUrl.length; i++ )
+			{
+				var card = document.createElement("div");
+				card.className = "img-card";
+				card.setAttribute("data-idx", i);
+				card.innerHTML = '<div class="img-id">' + (i+1) + '</div>' +
+					'<img id="myimg'+i+'" src="'+arrImgUrl[i]+'">' +
+					'<span class="img-val" id="valTD'+i+'">0</span>';
+				grid.appendChild(card);
+			}
+
+			setView('grid');
 		}
 	}
 
