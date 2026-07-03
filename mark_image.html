@@ -466,12 +466,16 @@ function bodyclickHandler(evt)
 		table.innerHTML = "";
 
 		if (currentMode === 'table') {
-			// 收集所有非空行
+			// 收集所有非空行，按 Tab 或 2+ 空白自适应分列
+			function splitRow(ln){
+				if (ln.indexOf('\t') >= 0) return ln.split('\t');
+				return ln.split(/\s{2,}/);
+			}
 			var allRows = [];
 			for (var k=0; k<lines.length; k++) {
 				var ln = lines[k].replace(/\r$/, '');
 				if (ln.trim().length === 0) continue;
-				allRows.push(ln.split('\t'));
+				allRows.push(splitRow(ln));
 			}
 			if (allRows.length === 0) {
 				alert('请粘贴表格数据');
