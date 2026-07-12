@@ -90,6 +90,164 @@
 	color: #ff00ff;
 	width: 40px;
 }
+.img-table.data-table {
+	font-size: 13px;
+}
+.img-table.data-table th {
+	white-space: nowrap;
+}
+.img-table.data-table td {
+	white-space: nowrap;
+}
+.img-table.data-table th.num-cell,
+.img-table.data-table td.num-cell {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	font-family: Menlo, Monaco, Consolas, monospace;
+}
+.img-table.data-table tbody tr.pinned-row {
+	background: #fff7e6;
+	outline: 2px solid #faad14;
+}
+.img-table.data-table td.pin-cell {
+	text-align: center;
+	white-space: nowrap;
+}
+.img-table.data-table .pin-btn {
+	padding: 2px 8px;
+	font-size: 12px;
+	cursor: pointer;
+}
+.page-wrap {
+	padding: 16px;
+	box-sizing: border-box;
+}
+.input-layout {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+	max-width: 1440px;
+}
+.input-main {
+	flex: 1 1 760px;
+	min-width: 0;
+}
+.input-sidebar {
+	width: 360px;
+	flex: 0 0 360px;
+	background: #fafafa;
+	border: 1px solid #e5e5e5;
+	border-radius: 10px;
+	padding: 16px;
+	box-sizing: border-box;
+}
+.input-sidebar h3 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+.mode-picker {
+	margin-bottom: 12px;
+}
+.mode-picker-title {
+	font-weight: bold;
+	margin-bottom: 8px;
+}
+.mode-category {
+	border: 1px solid #e5e5e5;
+	border-radius: 8px;
+	padding: 10px 12px;
+	margin-bottom: 10px;
+	background: #fafafa;
+}
+.mode-category-title {
+	font-weight: bold;
+	font-size: 13px;
+	margin-bottom: 4px;
+	color: #333;
+}
+.mode-category-desc {
+	font-size: 12px;
+	color: #777;
+	line-height: 1.5;
+	margin-bottom: 8px;
+}
+.mode-option-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.mode-option {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 10px;
+	border: 1px solid #d9d9d9;
+	border-radius: 999px;
+	background: #fff;
+	cursor: pointer;
+	font-size: 13px;
+}
+.mode-option:hover {
+	border-color: #1677ff;
+	color: #1677ff;
+}
+.mode-help-card {
+	display: none;
+	border: 1px solid #e5e5e5;
+	border-radius: 8px;
+	padding: 12px;
+	background: #fff;
+	transition: all 0.2s ease;
+}
+.mode-help-card.active {
+	display: block;
+	border-color: #1677ff;
+	box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+	background: #f4f8ff;
+}
+.mode-help-title {
+	font-weight: bold;
+	margin-bottom: 6px;
+}
+.mode-help-desc {
+	font-size: 12px;
+	color: #555;
+	line-height: 1.6;
+	margin-bottom: 8px;
+}
+.mode-help-example-label {
+	font-size: 12px;
+	color: #888;
+	margin: 8px 0 4px;
+}
+.mode-help-example {
+	margin: 0;
+	padding: 10px;
+	border-radius: 6px;
+	background: #f5f5f5;
+	font-size: 12px;
+	line-height: 1.5;
+	max-width: 100%;
+	overflow-x: auto;
+	white-space: pre;
+	word-break: normal;
+	font-family: Menlo, Monaco, Consolas, monospace;
+}
+.input-textarea {
+	width: 100%;
+	height: 400px;
+	box-sizing: border-box;
+	resize: vertical;
+}
+@media (max-width: 1100px) {
+	.input-layout {
+		flex-direction: column;
+	}
+	.input-sidebar {
+		width: 100%;
+		flex-basis: auto;
+	}
+}
 </style>
 
 <script language="javascript">
@@ -268,28 +426,66 @@ function bodyclickHandler(evt)
 
 <BODY onclick=bodyclickHandler(event)>
 
+<div class="page-wrap">
 <div id="divURL" style="display:block">
-	<div style="margin-bottom:8px;">
-		<label><b>输入模式：</b></label>
-		<label><input type="radio" name="inputMode" value="url" checked onclick="switchInputMode('url')"/> URL 模式（每行一个图片链接）</label>
-		&nbsp;&nbsp;
-		<label><input type="radio" name="inputMode" value="table" onclick="switchInputMode('table')"/> 表格模式（自动识别 URL 列，可含表头也可不含）</label>
+	<div class="input-layout">
+		<div class="input-main">
+			<div class="mode-picker">
+				<div class="mode-picker-title">请选择输入模式</div>
+				<div class="mode-category">
+					<div class="mode-category-title">图片标注类</div>
+					<div class="mode-category-desc">用于批量查看图片，并点击标记需要关注的图片。</div>
+					<div class="mode-option-list">
+						<label class="mode-option"><input type="radio" name="inputMode" value="url" checked onclick="switchInputMode('url')"/> URL 模式</label>
+						<label class="mode-option"><input type="radio" name="inputMode" value="table" onclick="switchInputMode('table')"/> 表格模式</label>
+					</div>
+				</div>
+				<div class="mode-category">
+					<div class="mode-category-title">数据查看类</div>
+					<div class="mode-category-desc">用于展示 CSV 指标表，对齐数值并支持关键行置顶比较。</div>
+					<div class="mode-option-list">
+						<label class="mode-option"><input type="radio" name="inputMode" value="data" onclick="switchInputMode('data')"/> 数据模式</label>
+					</div>
+				</div>
+			</div>
+			<label id="lblInput">请输入内容：</label>
+			<input type=button id="btnLoad" value="显示图片" onclick="loadImg()"/>
+			<br/>
+			<textarea cols="40" rows="15" class="input-textarea" name="idTxtAreaUrl" id="idTxtAreaUrl"></textarea>
+		</div>
+		<div class="input-sidebar">
+			<h3>当前模式说明</h3>
+			<div id="modeHelpUrl" class="mode-help-card active">
+				<div class="mode-help-title">URL 模式</div>
+				<div class="mode-help-desc">适合直接批量贴图片链接。每行一个 URL，工具会按顺序渲染成图片网格。</div>
+				<div class="mode-help-example-label">示例</div>
+				<pre class="mode-help-example">https://example.com/a.jpg
+https://example.com/b.png
+https://example.com/c.webp</pre>
+			</div>
+			<div id="modeHelpTable" class="mode-help-card">
+				<div class="mode-help-title">表格模式</div>
+				<div class="mode-help-desc">适合从 Excel / 表格工具直接复制。支持带表头或不带表头，列之间用 Tab 分隔，工具会自动识别图片 URL 所在列。</div>
+				<div class="mode-help-example-label">示例</div>
+				<pre class="mode-help-example">商品ID	图片URL	说明
+1001	https://example.com/a.jpg	正常
+1002	https://example.com/b.jpg	待复核</pre>
+			</div>
+			<div id="modeHelpData" class="mode-help-card">
+				<div class="mode-help-title">数据模式</div>
+				<div class="mode-help-desc">适合粘贴 CSV 指标数据。首行会作为表头，数值列会自动右对齐；可点击“置顶”把某一行固定到表头下方，便于横向比较。</div>
+				<div class="mode-help-example-label">示例</div>
+				<pre class="mode-help-example">source,tag,epoch,t,acc,recall,漏召,误伤,combined,TP,FP,FN,TN
+online_ref,v7,,0.10,0.7388,0.1020,0.8980,0.0153,0.9133,106,41,933,2650
+online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
+			</div>
+		</div>
 	</div>
-	<div id="urlHint" style="color:#666;font-size:12px;margin-bottom:4px;">
-		每行粘贴一个图片 URL。
-	</div>
-	<div id="tableHint" style="color:#666;font-size:12px;margin-bottom:4px;display:none;">
-		直接从 Excel/表格复制粘贴，列之间使用 Tab（\t）分隔。工具会自动识别包含图片 URL 的列并渲染为图片；首行若不是 URL 会被当作表头，否则自动使用"列N"作为列名。
-	</div>
-	<label id="lblInput">请输入图片URL：</label>
-	<input type=button value="显示图片" onclick="loadImg()"/>
-	<br/>
-	<textarea cols="40" rows="15" style="width:850px;height:400px;" name="idTxtAreaUrl" id="idTxtAreaUrl"></textarea>
 </div>
 
 <div id="divImg" style="display:none">
 
-	<div style="margin-bottom:8px;">
+	<div id="viewControls" style="margin-bottom:8px;">
 		<label><b>展示视图：</b></label>
 		<input type=button id="btnViewGrid" value="网格视图" onclick="setView('grid')"/>
 		<input type=button id="btnViewTable" value="表格视图" onclick="setView('table')"/>
@@ -306,7 +502,7 @@ function bodyclickHandler(evt)
 		<input type=button value="8" onclick="setCols(8)"/>
 		<input type=button value="10" onclick="setCols(10)"/>
 	</div>
-	<div style="margin-bottom:8px;">
+	<div id="heightControls" style="margin-bottom:8px;">
 		<label>图片高度：</label>
 		<input type=button value="自适应高度" onclick="setAutoHeight()"/>
 		<input type=button value="固定高度" onclick="setFixedHeight()"/>
@@ -320,7 +516,7 @@ function bodyclickHandler(evt)
 	<div id="imgTableWrap" style="display:none;overflow:auto;max-height:80vh;">
 		<table id="imgTable" class="img-table"></table>
 	</div>
-	<div style="margin-top:10px;">
+	<div id="markControls" style="margin-top:10px;">
 		<div>
 			<input type=button value="获取被标记图片的URL" onclick="getMarkedImgUrl()"/>
 			<input type=button value="返回" onclick="location.reload()"/>
@@ -329,24 +525,56 @@ function bodyclickHandler(evt)
 			<label >被标记图片的URL列表：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label><span class=""></span><label id="labelMarkedImgCnt"></label>
 		</div>
 		<textarea cols="40" rows="5" style="width:850px;height:200px;" disabled="disabled" name="idTxtAreaMarkedUrl" id="idTxtAreaMarkedUrl"></textarea>
+</div>
+	<div id="dataControls" style="margin-top:10px;display:none;">
+		<input type=button value="返回" onclick="location.reload()"/>
 	</div>
 </div>
-
-</BODY>
-
+</div>
 
 <script language="javascript">
 
 	var totalImgCount = 0;
-	var currentMode = 'url';      // 'url' | 'table'
+	var currentMode = 'url';      // 'url' | 'table' | 'data'
 	var currentView = 'grid';     // 'grid' | 'table'
+
+	function updateModeHelpState(mode) {
+		var urlCard = document.getElementById("modeHelpUrl");
+		var tableCard = document.getElementById("modeHelpTable");
+		var dataCard = document.getElementById("modeHelpData");
+		if (urlCard) {
+			urlCard.className = (mode === 'url') ? 'mode-help-card active' : 'mode-help-card';
+		}
+		if (tableCard) {
+			tableCard.className = (mode === 'table') ? 'mode-help-card active' : 'mode-help-card';
+		}
+		if (dataCard) {
+			dataCard.className = (mode === 'data') ? 'mode-help-card active' : 'mode-help-card';
+		}
+	}
 
 	function switchInputMode(mode) {
 		currentMode = mode;
-		document.getElementById("urlHint").style.display   = (mode==='url')   ? 'block' : 'none';
-		document.getElementById("tableHint").style.display = (mode==='table') ? 'block' : 'none';
-		document.getElementById("lblInput").innerHTML =
-			(mode==='url') ? '请输入图片URL：' : '请粘贴带表头的表格数据（Tab 分隔）：';
+		var labelText = '请输入图片URL：';
+		var buttonText = '显示图片';
+		if (mode === 'table') {
+			labelText = '请粘贴表格内容：';
+		} else if (mode === 'data') {
+			labelText = '请粘贴 CSV 数据：';
+			buttonText = '展示数据';
+		}
+		document.getElementById("lblInput").innerHTML = labelText;
+		document.getElementById("btnLoad").value = buttonText;
+		updateModeHelpState(mode);
+	}
+
+	function setResultControlsForMode(mode) {
+		var isDataMode = (mode === 'data');
+		document.getElementById("viewControls").style.display = isDataMode ? 'none' : 'block';
+		document.getElementById("gridControls").style.display = isDataMode ? 'none' : 'block';
+		document.getElementById("heightControls").style.display = isDataMode ? 'none' : 'block';
+		document.getElementById("markControls").style.display = isDataMode ? 'none' : 'block';
+		document.getElementById("dataControls").style.display = isDataMode ? 'block' : 'none';
 	}
 
 	function setView(view) {
@@ -449,6 +677,147 @@ function bodyclickHandler(evt)
 			.replace(/"/g, '&quot;');
 	}
 
+	function parseCsvLine(line) {
+		var cells = [];
+		var cur = '';
+		var inQuote = false;
+		for (var i=0; i<line.length; i++) {
+			var ch = line.charAt(i);
+			if (ch === '"') {
+				if (inQuote && line.charAt(i+1) === '"') {
+					cur += '"';
+					i++;
+				} else {
+					inQuote = !inQuote;
+				}
+			} else if (ch === ',' && !inQuote) {
+				cells.push(cur);
+				cur = '';
+			} else {
+				cur += ch;
+			}
+		}
+		cells.push(cur);
+		return cells;
+	}
+
+	function isNumericCell(text) {
+		var s = (text == null ? '' : String(text)).trim();
+		return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s);
+	}
+
+	function appendTextCell(row, tagName, text, className) {
+		var cell = document.createElement(tagName);
+		cell.appendChild(document.createTextNode(text == null ? '' : text));
+		if (className) cell.className = className;
+		row.appendChild(cell);
+		return cell;
+	}
+
+	function pinDataRow(rowIndex) {
+		var table = document.getElementById("imgTable");
+		if (!table) return;
+		var tbodyList = table.getElementsByTagName('tbody');
+		if (tbodyList.length === 0) return;
+
+		var tbody = tbodyList[0];
+		var rows = tbody.getElementsByTagName('tr');
+		var target = null;
+		for (var i=0; i<rows.length; i++) {
+			rows[i].classList.remove('pinned-row');
+			var btns = rows[i].getElementsByTagName('input');
+			if (btns.length > 0) btns[0].value = '置顶';
+			if (rows[i].getAttribute('data-row-idx') === String(rowIndex)) {
+				target = rows[i];
+			}
+		}
+		if (!target) return;
+
+		tbody.insertBefore(target, tbody.firstChild);
+		target.classList.add('pinned-row');
+		var targetBtns = target.getElementsByTagName('input');
+		if (targetBtns.length > 0) targetBtns[0].value = '已置顶';
+	}
+
+	function appendPinCell(row, rowIndex) {
+		var cell = document.createElement('td');
+		var btn = document.createElement('input');
+		cell.className = 'pin-cell';
+		btn.type = 'button';
+		btn.className = 'pin-btn';
+		btn.value = '置顶';
+		btn.onclick = function(evt) {
+			if (evt && evt.stopPropagation) evt.stopPropagation();
+			pinDataRow(rowIndex);
+		};
+		cell.appendChild(btn);
+		row.appendChild(cell);
+		return cell;
+	}
+
+	function renderDataTable(raw, table) {
+		var lines = raw.split('\n');
+		var rows = [];
+		for (var i=0; i<lines.length; i++) {
+			var ln = lines[i].replace(/\r$/, '');
+			if (ln.trim().length === 0) continue;
+			rows.push(parseCsvLine(ln));
+		}
+		if (rows.length === 0) {
+			alert('请粘贴 CSV 数据');
+			return false;
+		}
+
+		var maxCols = 0;
+		for (var r=0; r<rows.length; r++) {
+			if (rows[r].length > maxCols) maxCols = rows[r].length;
+		}
+
+		var headers = rows[0];
+		var dataRows = rows.slice(1);
+		while (headers.length < maxCols) headers.push('列'+(headers.length+1));
+
+		var numericCols = [];
+		for (var c=0; c<maxCols; c++) {
+			var hasValue = false;
+			var allNumeric = true;
+			for (var rr=0; rr<dataRows.length; rr++) {
+				var value = dataRows[rr][c] == null ? '' : dataRows[rr][c];
+				if (String(value).trim().length === 0) continue;
+				hasValue = true;
+				if (!isNumericCell(value)) {
+					allNumeric = false;
+					break;
+				}
+			}
+			numericCols[c] = hasValue && allNumeric;
+		}
+
+		var thead = document.createElement('thead');
+		var trh = document.createElement('tr');
+		appendTextCell(trh, 'th', '#');
+		appendTextCell(trh, 'th', '操作');
+		for (var hc=0; hc<maxCols; hc++) {
+			appendTextCell(trh, 'th', (headers[hc] || '').trim() || ('列'+(hc+1)), numericCols[hc] ? 'num-cell' : '');
+		}
+		thead.appendChild(trh);
+		table.appendChild(thead);
+
+		var tbody = document.createElement('tbody');
+		for (var dr=0; dr<dataRows.length; dr++) {
+			var tr = document.createElement('tr');
+			tr.setAttribute('data-row-idx', dr);
+			appendTextCell(tr, 'td', String(dr+1), 'num-cell');
+			appendPinCell(tr, dr);
+			for (var dc=0; dc<maxCols; dc++) {
+				appendTextCell(tr, 'td', dataRows[dr][dc] == null ? '' : dataRows[dr][dc], numericCols[dc] ? 'num-cell' : '');
+			}
+			tbody.appendChild(tr);
+		}
+		table.appendChild(tbody);
+		return true;
+	}
+
 	function loadImg(){
 
 		var objDivUrl = document.getElementById("divURL");
@@ -464,8 +833,16 @@ function bodyclickHandler(evt)
 		var table = document.getElementById("imgTable");
 		grid.innerHTML = "";
 		table.innerHTML = "";
+		table.className = "img-table";
+		setResultControlsForMode(currentMode);
 
-		if (currentMode === 'table') {
+		if (currentMode === 'data') {
+			table.className = "img-table data-table";
+			if (!renderDataTable(raw, table)) return;
+			totalImgCount = 0;
+			setView('table');
+			setResultControlsForMode('data');
+		} else if (currentMode === 'table') {
 			// 收集所有非空行，按 Tab 或 2+ 空白自适应分列
 			function splitRow(ln){
 				if (ln.indexOf('\t') >= 0) return ln.split('\t');
@@ -587,7 +964,9 @@ function bodyclickHandler(evt)
 	}
 
 	//loadImg();
+	switchInputMode(currentMode);
 
 </script>
 
+</BODY>
 </HTML>
