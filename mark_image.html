@@ -62,6 +62,24 @@
 	top: 0;
 	z-index: 1;
 }
+.img-table th.sortable {
+	cursor: pointer;
+	user-select: none;
+}
+.img-table th.sortable:hover {
+	background: #eaf3ff;
+}
+.img-table th.sorted-asc,
+.img-table th.sorted-desc {
+	background: #dbeafe;
+	color: #0b5cad;
+}
+.img-table .sort-indicator {
+	display: inline-block;
+	margin-left: 4px;
+	color: #1677ff;
+	font-size: 11px;
+}
 .img-table tbody tr {
 	cursor: pointer;
 }
@@ -714,6 +732,96 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		return cell;
 	}
 
+	function getCellSortValue(row, colIndex) {
+		var cell = row.cells[colIndex];
+		if (!cell) return '';
+		var img = cell.getElementsByTagName('img')[0];
+		if (img && img.src) return img.src;
+		return (cell.textContent || cell.innerText || '').trim();
+	}
+
+	function compareTableValues(a, b, isNumeric) {
+		var av = (a == null ? '' : String(a)).trim();
+		var bv = (b == null ? '' : String(b)).trim();
+		if (isNumeric) {
+			var an = parseFloat(av);
+			var bn = parseFloat(bv);
+			if (!isNaN(an) && !isNaN(bn)) return an - bn;
+		}
+		return av.localeCompare(bv, undefined, {numeric: true, sensitivity: 'base'});
+	}
+
+	function sortTableByColumn(table, colIndex) {
+		var tbodyList = table.getElementsByTagName('tbody');
+		if (!table || tbodyList.length === 0) return;
+		var tbody = tbodyList[0];
+		var rows = Array.prototype.slice.call(tbody.getElementsByTagName('tr'));
+		if (rows.length <= 1) return;
+
+		var sortState = table._sortState || {};
+		var direction = (sortState.colIndex === colIndex && sortState.direction === 'asc') ? 'desc' : 'asc';
+		var isNumeric = rows.every(function(row) {
+			var value = getCellSortValue(row, colIndex);
+			return value === '' || isNumericCell(value);
+		});
+
+		rows.sort(function(rowA, rowB) {
+			var valueA = getCellSortValue(rowA, colIndex);
+			var valueB = getCellSortValue(rowB, colIndex);
+			var emptyA = String(valueA).trim().length === 0;
+			var emptyB = String(valueB).trim().length === 0;
+			if (emptyA && emptyB) return 0;
+			if (emptyA) return 1;
+			if (emptyB) return -1;
+
+			var result = compareTableValues(valueA, valueB, isNumeric);
+			if (result === 0) {
+				result = compareTableValues(getCellSortValue(rowA, 0), getCellSortValue(rowB, 0), true);
+			}
+			return direction === 'asc' ? result : -result;
+		});
+
+		for (var i=0; i<rows.length; i++) {
+			tbody.appendChild(rows[i]);
+		}
+		table._sortState = {colIndex: colIndex, direction: direction};
+		updateSortHeaders(table, colIndex, direction);
+	}
+
+	function updateSortHeaders(table, colIndex, direction) {
+		var headers = table.getElementsByTagName('th');
+		for (var i=0; i<headers.length; i++) {
+			var th = headers[i];
+			var label = th.getAttribute('data-sort-label');
+			if (label != null) th.innerHTML = escapeHtml(label);
+			th.classList.remove('sorted-asc');
+			th.classList.remove('sorted-desc');
+			if (i === colIndex) {
+				th.classList.add(direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+				th.innerHTML = escapeHtml(label || '') + '<span class="sort-indicator">' + (direction === 'asc' ? '▲' : '▼') + '</span>';
+			}
+		}
+	}
+
+	function makeTableSortable(table) {
+		var headRows = table.getElementsByTagName('thead');
+		if (!table || headRows.length === 0) return;
+		var headers = headRows[0].getElementsByTagName('th');
+		for (var i=0; i<headers.length; i++) {
+			(function(colIndex) {
+				var th = headers[colIndex];
+				var label = (th.textContent || th.innerText || '').trim();
+				th.setAttribute('data-sort-label', label);
+				th.classList.add('sortable');
+				th.title = '点击排序，再次点击切换升序/降序';
+				th.onclick = function(evt) {
+					if (evt && evt.stopPropagation) evt.stopPropagation();
+					sortTableByColumn(table, colIndex);
+				};
+			})(i);
+		}
+	}
+
 	function pinDataRow(rowIndex) {
 		var table = document.getElementById("imgTable");
 		if (!table) return;
@@ -834,11 +942,13 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		grid.innerHTML = "";
 		table.innerHTML = "";
 		table.className = "img-table";
+		table._sortState = null;
 		setResultControlsForMode(currentMode);
 
 		if (currentMode === 'data') {
 			table.className = "img-table data-table";
 			if (!renderDataTable(raw, table)) return;
+			makeTableSortable(table);
 			totalImgCount = 0;
 			setView('table');
 			setResultControlsForMode('data');
@@ -934,6 +1044,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 				tbody.appendChild(tr);
 			}
 			table.appendChild(tbody);
+			makeTableSortable(table);
 
 			setView('table');
 		} else {
