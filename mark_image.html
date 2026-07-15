@@ -87,6 +87,22 @@
 	background-color: #ffe0ff;
 	outline: 2px solid #ff00ff;
 }
+.img-table tbody tr.selected-row {
+	box-shadow: inset 4px 0 0 #1677ff;
+	background-color: #eaf3ff;
+}
+.img-table tbody tr.marked.selected-row {
+	background-color: #f2e7ff;
+	outline: 2px solid #1677ff;
+}
+.img-table tbody tr.pinned-row {
+	background: #fff7e6;
+	outline: 2px solid #faad14;
+}
+.img-table tbody tr.pinned-row.selected-row {
+	background: #fff1d6;
+	box-shadow: inset 4px 0 0 #1677ff;
+}
 .img-table td.url-cell {
 	text-align: center;
 }
@@ -123,16 +139,15 @@
 	font-variant-numeric: tabular-nums;
 	font-family: Menlo, Monaco, Consolas, monospace;
 }
-.img-table.data-table tbody tr.pinned-row {
-	background: #fff7e6;
-	outline: 2px solid #faad14;
-}
-.img-table.data-table td.pin-cell {
+.img-table td.action-cell,
+.img-table.data-table td.action-cell {
 	text-align: center;
 	white-space: nowrap;
 }
-.img-table.data-table .pin-btn {
+.img-table .row-action-btn,
+.img-table.data-table .row-action-btn {
 	padding: 2px 8px;
+	margin: 0 2px;
 	font-size: 12px;
 	cursor: pointer;
 }
@@ -766,6 +781,11 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		});
 
 		rows.sort(function(rowA, rowB) {
+			var pinnedA = rowA.classList.contains('pinned-row');
+			var pinnedB = rowB.classList.contains('pinned-row');
+			if (pinnedA && !pinnedB) return -1;
+			if (!pinnedA && pinnedB) return 1;
+
 			var valueA = getCellSortValue(rowA, colIndex);
 			var valueB = getCellSortValue(rowB, colIndex);
 			var emptyA = String(valueA).trim().length === 0;
@@ -822,7 +842,27 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		}
 	}
 
-	function pinDataRow(rowIndex) {
+	function findBodyRow(table, attrName, rowKey) {
+		if (!table) return null;
+		var tbodyList = table.getElementsByTagName('tbody');
+		if (tbodyList.length === 0) return null;
+		var rows = tbodyList[0].getElementsByTagName('tr');
+		for (var i=0; i<rows.length; i++) {
+			if (rows[i].getAttribute(attrName) === String(rowKey)) return rows[i];
+		}
+		return null;
+	}
+
+	function setRowActionButton(row, actionName, text) {
+		var btns = row.getElementsByTagName('input');
+		for (var i=0; i<btns.length; i++) {
+			if (btns[i].getAttribute('data-action') === actionName) {
+				btns[i].value = text;
+			}
+		}
+	}
+
+	function togglePinRow(attrName, rowKey) {
 		var table = document.getElementById("imgTable");
 		if (!table) return;
 		var tbodyList = table.getElementsByTagName('tbody');
@@ -830,35 +870,57 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 
 		var tbody = tbodyList[0];
 		var rows = tbody.getElementsByTagName('tr');
-		var target = null;
+		var target = findBodyRow(table, attrName, rowKey);
+		if (!target) return;
+
+		var isPinned = target.classList.contains('pinned-row');
 		for (var i=0; i<rows.length; i++) {
 			rows[i].classList.remove('pinned-row');
-			var btns = rows[i].getElementsByTagName('input');
-			if (btns.length > 0) btns[0].value = '置顶';
-			if (rows[i].getAttribute('data-row-idx') === String(rowIndex)) {
-				target = rows[i];
-			}
+			setRowActionButton(rows[i], 'pin', '置顶');
 		}
-		if (!target) return;
+		if (isPinned) return;
 
 		tbody.insertBefore(target, tbody.firstChild);
 		target.classList.add('pinned-row');
-		var targetBtns = target.getElementsByTagName('input');
-		if (targetBtns.length > 0) targetBtns[0].value = '已置顶';
+		setRowActionButton(target, 'pin', '取消置顶');
 	}
 
-	function appendPinCell(row, rowIndex) {
+	function toggleSelectRow(attrName, rowKey) {
+		var table = document.getElementById("imgTable");
+		var row = findBodyRow(table, attrName, rowKey);
+		if (!row) return;
+		var selected = !row.classList.contains('selected-row');
+		if (selected) {
+			row.classList.add('selected-row');
+		} else {
+			row.classList.remove('selected-row');
+		}
+		setRowActionButton(row, 'select', selected ? '取消选中' : '选中');
+	}
+
+	function appendRowActionsCell(row, attrName, rowKey) {
 		var cell = document.createElement('td');
-		var btn = document.createElement('input');
-		cell.className = 'pin-cell';
-		btn.type = 'button';
-		btn.className = 'pin-btn';
-		btn.value = '置顶';
-		btn.onclick = function(evt) {
+		var pinBtn = document.createElement('input');
+		var selectBtn = document.createElement('input');
+		cell.className = 'action-cell';
+		pinBtn.type = 'button';
+		pinBtn.className = 'row-action-btn';
+		pinBtn.value = '置顶';
+		pinBtn.setAttribute('data-action', 'pin');
+		pinBtn.onclick = function(evt) {
 			if (evt && evt.stopPropagation) evt.stopPropagation();
-			pinDataRow(rowIndex);
+			togglePinRow(attrName, rowKey);
 		};
-		cell.appendChild(btn);
+		selectBtn.type = 'button';
+		selectBtn.className = 'row-action-btn';
+		selectBtn.value = '选中';
+		selectBtn.setAttribute('data-action', 'select');
+		selectBtn.onclick = function(evt) {
+			if (evt && evt.stopPropagation) evt.stopPropagation();
+			toggleSelectRow(attrName, rowKey);
+		};
+		cell.appendChild(pinBtn);
+		cell.appendChild(selectBtn);
 		row.appendChild(cell);
 		return cell;
 	}
@@ -916,7 +978,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 			var tr = document.createElement('tr');
 			tr.setAttribute('data-row-idx', dr);
 			appendTextCell(tr, 'td', String(dr+1), 'num-cell');
-			appendPinCell(tr, dr);
+			appendRowActionsCell(tr, 'data-row-idx', dr);
 			for (var dc=0; dc<maxCols; dc++) {
 				appendTextCell(tr, 'td', dataRows[dr][dc] == null ? '' : dataRows[dr][dc], numericCols[dc] ? 'num-cell' : '');
 			}
@@ -1009,7 +1071,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 			// 构建表头
 			var thead = document.createElement('thead');
 			var trh = document.createElement('tr');
-			trh.innerHTML = '<th>#</th><th>标记</th>' +
+			trh.innerHTML = '<th>#</th><th>操作</th><th>标记</th>' +
 				headers.map(function(h,idx){
 					var name = escapeHtml((h||'').trim() || ('列'+(idx+1)));
 					if (idx === urlColIdx) name += '（图片）';
@@ -1025,22 +1087,31 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 				var tr = document.createElement('tr');
 				tr.className = 'img-row';
 				tr.setAttribute('data-idx', r);
-				var html = '<td>' + (r+1) + '</td>' +
-					'<td class="mark-cell"><span class="img-val" id="valTD'+r+'">0</span></td>';
+				appendTextCell(tr, 'td', String(r+1), 'num-cell');
+				appendRowActionsCell(tr, 'data-idx', r);
+				var markCell = document.createElement('td');
+				markCell.className = 'mark-cell';
+				markCell.innerHTML = '<span class="img-val" id="valTD'+r+'">0</span>';
+				tr.appendChild(markCell);
 				for (var c=0; c<headers.length; c++) {
 					var cell = cols[c] != null ? cols[c] : '';
 					if (c === urlColIdx) {
 						var u = (cell||'').trim();
 						if (isUrl(u)) {
-							html += '<td class="url-cell"><img id="myimg'+r+'" src="'+escapeHtml(u)+'"/><div style="font-size:11px;color:#888;word-break:break-all;">'+escapeHtml(u)+'</div></td>';
+							var urlCell = document.createElement('td');
+							urlCell.className = 'url-cell';
+							urlCell.innerHTML = '<img id="myimg'+r+'" src="'+escapeHtml(u)+'"/><div style="font-size:11px;color:#888;word-break:break-all;">'+escapeHtml(u)+'</div>';
+							tr.appendChild(urlCell);
 						} else {
-							html += '<td class="url-cell"><span id="myimgHolder'+r+'" data-src="" style="color:#999;">(无URL)</span></td>';
+							var emptyUrlCell = document.createElement('td');
+							emptyUrlCell.className = 'url-cell';
+							emptyUrlCell.innerHTML = '<span id="myimgHolder'+r+'" data-src="" style="color:#999;">(无URL)</span>';
+							tr.appendChild(emptyUrlCell);
 						}
 					} else {
-						html += '<td>'+escapeHtml(cell)+'</td>';
+						appendTextCell(tr, 'td', cell);
 					}
 				}
-				tr.innerHTML = html;
 				tbody.appendChild(tr);
 			}
 			table.appendChild(tbody);
