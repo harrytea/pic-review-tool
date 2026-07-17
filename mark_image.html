@@ -471,6 +471,7 @@ function bodyclickHandler(evt)
 					<div class="mode-option-list">
 						<label class="mode-option"><input type="radio" name="inputMode" value="url" checked onclick="switchInputMode('url')"/> URL 模式</label>
 						<label class="mode-option"><input type="radio" name="inputMode" value="table" onclick="switchInputMode('table')"/> 表格模式</label>
+						<label class="mode-option"><input type="radio" name="inputMode" value="imageCsv" onclick="switchInputMode('imageCsv')"/> CSV 格式</label>
 					</div>
 				</div>
 				<div class="mode-category">
@@ -504,6 +505,14 @@ https://example.com/c.webp</pre>
 				<pre class="mode-help-example">商品ID	图片URL	说明
 1001	https://example.com/a.jpg	正常
 1002	https://example.com/b.jpg	待复核</pre>
+			</div>
+			<div id="modeHelpImageCsv" class="mode-help-card">
+				<div class="mode-help-title">CSV 格式（图片标注）</div>
+				<div class="mode-help-desc">适合粘贴逗号分隔的图片数据。支持带表头或不带表头以及带引号的字段，工具会自动识别图片 URL 所在列。</div>
+				<div class="mode-help-example-label">示例</div>
+				<pre class="mode-help-example">商品ID,图片URL,说明
+1001,https://example.com/a.jpg,正常
+1002,https://example.com/b.jpg,"待复核, 尺寸异常"</pre>
 			</div>
 			<div id="modeHelpData" class="mode-help-card">
 				<div class="mode-help-title">CSV 格式</div>
@@ -577,12 +586,13 @@ r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 <script language="javascript">
 
 	var totalImgCount = 0;
-	var currentMode = 'url';      // 'url' | 'table' | 'dataCsv' | 'dataTab'
+	var currentMode = 'url';      // 'url' | 'table' | 'imageCsv' | 'dataCsv' | 'dataTab'
 	var currentView = 'grid';     // 'grid' | 'table'
 
 	function updateModeHelpState(mode) {
 		var urlCard = document.getElementById("modeHelpUrl");
 		var tableCard = document.getElementById("modeHelpTable");
+		var imageCsvCard = document.getElementById("modeHelpImageCsv");
 		var dataCard = document.getElementById("modeHelpData");
 		var dataTabCard = document.getElementById("modeHelpDataTab");
 		if (urlCard) {
@@ -590,6 +600,9 @@ r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 		}
 		if (tableCard) {
 			tableCard.className = (mode === 'table') ? 'mode-help-card active' : 'mode-help-card';
+		}
+		if (imageCsvCard) {
+			imageCsvCard.className = (mode === 'imageCsv') ? 'mode-help-card active' : 'mode-help-card';
 		}
 		if (dataCard) {
 			dataCard.className = (mode === 'dataCsv') ? 'mode-help-card active' : 'mode-help-card';
@@ -605,6 +618,8 @@ r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 		var buttonText = '显示图片';
 		if (mode === 'table') {
 			labelText = '请粘贴表格内容：';
+		} else if (mode === 'imageCsv') {
+			labelText = '请粘贴图片 CSV 数据：';
 		} else if (mode === 'dataCsv') {
 			labelText = '请粘贴 CSV 数据：';
 			buttonText = '展示数据';
@@ -1034,9 +1049,10 @@ r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 			totalImgCount = 0;
 			setView('table');
 			setResultControlsForMode(currentMode);
-		} else if (currentMode === 'table') {
-			// 收集所有非空行，按 Tab 或 2+ 空白自适应分列
+		} else if (currentMode === 'table' || currentMode === 'imageCsv') {
+			// 收集所有非空行：表格模式按 Tab/多空格分列，CSV 模式按逗号分列
 			function splitRow(ln){
+				if (currentMode === 'imageCsv') return parseDelimitedLine(ln, ',');
 				if (ln.indexOf('\t') >= 0) return ln.split('\t');
 				return ln.split(/\s{2,}/);
 			}
@@ -1047,7 +1063,7 @@ r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 				allRows.push(splitRow(ln));
 			}
 			if (allRows.length === 0) {
-				alert('请粘贴表格数据');
+				alert(currentMode === 'imageCsv' ? '请粘贴图片 CSV 数据' : '请粘贴表格数据');
 				return;
 			}
 
