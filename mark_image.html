@@ -475,9 +475,10 @@ function bodyclickHandler(evt)
 				</div>
 				<div class="mode-category">
 					<div class="mode-category-title">数据查看类</div>
-					<div class="mode-category-desc">用于展示 CSV 指标表，对齐数值并支持关键行置顶比较。</div>
+					<div class="mode-category-desc">用于展示 CSV 或 Tab 指标表，对齐数值并支持关键行置顶比较。</div>
 					<div class="mode-option-list">
-						<label class="mode-option"><input type="radio" name="inputMode" value="data" onclick="switchInputMode('data')"/> 数据模式</label>
+						<label class="mode-option"><input type="radio" name="inputMode" value="dataCsv" onclick="switchInputMode('dataCsv')"/> CSV 格式</label>
+						<label class="mode-option"><input type="radio" name="inputMode" value="dataTab" onclick="switchInputMode('dataTab')"/> Tab 格式</label>
 					</div>
 				</div>
 			</div>
@@ -505,12 +506,20 @@ https://example.com/c.webp</pre>
 1002	https://example.com/b.jpg	待复核</pre>
 			</div>
 			<div id="modeHelpData" class="mode-help-card">
-				<div class="mode-help-title">数据模式</div>
-				<div class="mode-help-desc">适合粘贴 CSV 指标数据。首行会作为表头，数值列会自动右对齐；可点击“置顶”把某一行固定到表头下方，便于横向比较。</div>
+				<div class="mode-help-title">CSV 格式</div>
+				<div class="mode-help-desc">适合粘贴逗号分隔的 CSV 指标数据。首行会作为表头，数值列会自动右对齐；可点击“置顶”把某一行固定到表头下方，便于横向比较。</div>
 				<div class="mode-help-example-label">示例</div>
-				<pre class="mode-help-example">source,tag,epoch,t,acc,recall,漏召,误伤,combined,TP,FP,FN,TN
-online_ref,v7,,0.10,0.7388,0.1020,0.8980,0.0153,0.9133,106,41,933,2650
-online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
+				<pre class="mode-help-example">tag,cfg,unfreeze_n,bblr,hlr,macro_f1,test_acc
+sanity_uf4_n1_limit2000,siglip2-base-patch16-256.yaml,4,1e-05,0.002,0.8249,0.8955
+r1_g5_bblr3e-5,siglip2-base-patch16-256.yaml,4,3e-05,0.002,0.8674,0.9174</pre>
+			</div>
+			<div id="modeHelpDataTab" class="mode-help-card">
+				<div class="mode-help-title">Tab 格式</div>
+				<div class="mode-help-desc">适合从 Excel、表格工具或训练日志复制的 Tab 分隔指标数据。首行会作为表头，数值列会自动右对齐；可点击“置顶”把某一行固定到表头下方，便于横向比较。</div>
+				<div class="mode-help-example-label">示例</div>
+				<pre class="mode-help-example">tag	cfg	unfreeze_n	bblr	hlr	macro_f1	test_acc
+sanity_uf4_n1_limit2000	siglip2-base-patch16-256.yaml	4	1e-05	0.002	0.8249	0.8955
+r1_g5_bblr3e-5	siglip2-base-patch16-256.yaml	4	3e-05	0.002	0.8674	0.9174</pre>
 			</div>
 		</div>
 	</div>
@@ -568,13 +577,14 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 <script language="javascript">
 
 	var totalImgCount = 0;
-	var currentMode = 'url';      // 'url' | 'table' | 'data'
+	var currentMode = 'url';      // 'url' | 'table' | 'dataCsv' | 'dataTab'
 	var currentView = 'grid';     // 'grid' | 'table'
 
 	function updateModeHelpState(mode) {
 		var urlCard = document.getElementById("modeHelpUrl");
 		var tableCard = document.getElementById("modeHelpTable");
 		var dataCard = document.getElementById("modeHelpData");
+		var dataTabCard = document.getElementById("modeHelpDataTab");
 		if (urlCard) {
 			urlCard.className = (mode === 'url') ? 'mode-help-card active' : 'mode-help-card';
 		}
@@ -582,7 +592,10 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 			tableCard.className = (mode === 'table') ? 'mode-help-card active' : 'mode-help-card';
 		}
 		if (dataCard) {
-			dataCard.className = (mode === 'data') ? 'mode-help-card active' : 'mode-help-card';
+			dataCard.className = (mode === 'dataCsv') ? 'mode-help-card active' : 'mode-help-card';
+		}
+		if (dataTabCard) {
+			dataTabCard.className = (mode === 'dataTab') ? 'mode-help-card active' : 'mode-help-card';
 		}
 	}
 
@@ -592,8 +605,11 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		var buttonText = '显示图片';
 		if (mode === 'table') {
 			labelText = '请粘贴表格内容：';
-		} else if (mode === 'data') {
+		} else if (mode === 'dataCsv') {
 			labelText = '请粘贴 CSV 数据：';
+			buttonText = '展示数据';
+		} else if (mode === 'dataTab') {
+			labelText = '请粘贴 Tab 表格数据：';
 			buttonText = '展示数据';
 		}
 		document.getElementById("lblInput").innerHTML = labelText;
@@ -602,7 +618,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 	}
 
 	function setResultControlsForMode(mode) {
-		var isDataMode = (mode === 'data');
+		var isDataMode = (mode === 'dataCsv' || mode === 'dataTab');
 		document.getElementById("viewControls").style.display = isDataMode ? 'none' : 'block';
 		document.getElementById("gridControls").style.display = isDataMode ? 'none' : 'block';
 		document.getElementById("heightControls").style.display = isDataMode ? 'none' : 'block';
@@ -710,7 +726,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 			.replace(/"/g, '&quot;');
 	}
 
-	function parseCsvLine(line) {
+	function parseDelimitedLine(line, delimiter) {
 		var cells = [];
 		var cur = '';
 		var inQuote = false;
@@ -723,7 +739,7 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 				} else {
 					inQuote = !inQuote;
 				}
-			} else if (ch === ',' && !inQuote) {
+			} else if (ch === delimiter && !inQuote) {
 				cells.push(cur);
 				cur = '';
 			} else {
@@ -732,6 +748,10 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		}
 		cells.push(cur);
 		return cells;
+	}
+
+	function parseCsvLine(line) {
+		return parseDelimitedLine(line, ',');
 	}
 
 	function isNumericCell(text) {
@@ -925,16 +945,16 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		return cell;
 	}
 
-	function renderDataTable(raw, table) {
+	function renderDataTable(raw, table, delimiter) {
 		var lines = raw.split('\n');
 		var rows = [];
 		for (var i=0; i<lines.length; i++) {
 			var ln = lines[i].replace(/\r$/, '');
 			if (ln.trim().length === 0) continue;
-			rows.push(parseCsvLine(ln));
+			rows.push(parseDelimitedLine(ln, delimiter));
 		}
 		if (rows.length === 0) {
-			alert('请粘贴 CSV 数据');
+			alert(delimiter === '\t' ? '请粘贴 Tab 表格数据' : '请粘贴 CSV 数据');
 			return false;
 		}
 
@@ -1007,13 +1027,13 @@ online_ref,v8,,0.10,0.7853,0.2705,0.7295,0.0160,0.7455,281,43,758,2648</pre>
 		table._sortState = null;
 		setResultControlsForMode(currentMode);
 
-		if (currentMode === 'data') {
+		if (currentMode === 'dataCsv' || currentMode === 'dataTab') {
 			table.className = "img-table data-table";
-			if (!renderDataTable(raw, table)) return;
+			if (!renderDataTable(raw, table, currentMode === 'dataTab' ? '\t' : ',')) return;
 			makeTableSortable(table);
 			totalImgCount = 0;
 			setView('table');
-			setResultControlsForMode('data');
+			setResultControlsForMode(currentMode);
 		} else if (currentMode === 'table') {
 			// 收集所有非空行，按 Tab 或 2+ 空白自适应分列
 			function splitRow(ln){
